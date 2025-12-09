@@ -34,7 +34,7 @@ int main(void) {
   arena = jon_arena_create(500);
   test_condition("Can create an arena with capacity",
                  arena.data != NULL && arena.offset != NULL &&
-                     arena.capacity != 0);
+                     arena.capacity != 0 && arena.offset == arena.data);
 
   jon_arena_delete(&arena);
   test_condition("Can delete a valid arena with capacity",
@@ -61,5 +61,16 @@ int main(void) {
   test_condition("alloc on exhausted arena fails", allocated1 == NULL);
 
   jon_arena_delete(&arena);
+
+  arena = jon_arena_create(10);
+  allocated1 = jon_arena_alloc(&arena, 1);
+  test_condition("alloc bumps offset",
+                 (size_t)arena.offset == (size_t)arena.data + 1);
+  jon_arena_reset(&arena);
+  test_condition("reset moves offset to initial position",
+                 arena.offset == arena.data);
+
+  jon_arena_delete(&arena);
+
   return 0;
 }
