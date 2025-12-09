@@ -11,5 +11,6 @@ typedef struct jonArena_s {
 
 jonArena jon_arena_create(size_t size);
 void jon_arena_delete(jonArena *const arena);
+void *jon_arena_alloc(jonArena *const arena, size_t size);
 
 #endif // JONALLOCATORS_ARENA_H

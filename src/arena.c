@@ -23,3 +23,14 @@ void jon_arena_delete(jonArena *const arena) {
   arena->offset = NULL;
   arena->capacity = 0;
 }
+
+void *jon_arena_alloc(jonArena *const arena, size_t size) {
+  void *result = NULL;
+  const size_t used_capacity = (size_t)arena->offset - (size_t)arena->data;
+  const size_t free_capacity = arena->capacity - used_capacity;
+  if (size <= free_capacity) {
+    result = arena->offset;
+    arena->offset = (void *)((size_t)arena->offset + size);
+  }
+  return result;
+}
