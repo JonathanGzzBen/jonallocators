@@ -4,6 +4,10 @@ project(jonallocators LANGUAGES C)
 
 include(CheckCCompilerFlag)
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+
 set(custom_compiler_flags)
 if (("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU"))
         list(APPEND custom_compiler_flags
@@ -48,15 +52,28 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_C_COMPILER_ID}" STR
     endif()
 
 # Enable sanitizers
-list(APPEND custom_compiler_flags
-        -fno-omit-frame-pointer
-        -fsanitize=address
-        -fsanitize=undefined
-        -fsanitize=float-cast-overflow
-        -fsanitize-address-use-after-scope
-        -fsanitize=integer
-        -fno-sanitize-recover
-        )
+option(USE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+if(USE_SANITIZERS)
+    if (("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU"))
+        list(APPEND custom_compiler_flags
+                -fno-omit-frame-pointer
+                -fno-sanitize-merge
+                -fsanitize=address
+                -fsanitize=undefined
+                -fsanitize=float-cast-overflow
+                -fsanitize-address-use-after-scope
+                -fsanitize=integer
+                -fno-sanitize-recover
+                )
+    elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+        list(APPEND custom_compiler_flags
+                -fsanitize=address
+                )
+    endif()
+endif()
+
+add_library(jonallocators_lib src/arena.c)
+target_include_directories(jonallocators_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # apply custom compiler flags
 foreach(compiler_flag ${custom_compiler_flags})
@@ -65,12 +82,10 @@ foreach(compiler_flag ${custom_compiler_flags})
 
     CHECK_C_COMPILER_FLAG(${compiler_flag} "FLAG_SUPPORTED_${current_variable}")
     if (FLAG_SUPPORTED_${current_variable})
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${compiler_flag}")
+        add_compile_options(${compiler_flag})
+        add_link_options(${compiler_flag})
     endif()
 endforeach()
-
-add_library(jonallocators_lib src/arena.c)
-target_include_directories(jonallocators_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable(jonallocators_test tests/tests.c)
 target_link_libraries(jonallocators_test PRIVATE jonallocators_lib)
